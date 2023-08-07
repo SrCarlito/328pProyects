@@ -1,0 +1,53 @@
+#include <avr/io.h> // Librerias utilizadas y necesarias para la actividad
+#include <math.h>
+#include <util/delay.h>
+
+uint16_t ADCvalue; // Variable utilizada para almacenar el valor leído del ADC
+
+void setup() {
+  DDRB |= (1 << DDB0) | (1 << DDB1) | (1 << DDB2) | (1 << DDB3); // Pines de PORTB como salidas (|)
+  
+  DDRD &= ~(1 << DDD5); // Pin de PC5 como entrada (~)
+}
+
+void ADC_init(void) {
+  ADMUX |= (1 << REFS0); // Selecciona el voltaje de referencia
+  ADMUX &= ~(1 << REFS1); // Referencia de voltaje en AVCC
+  ADMUX &= ~(1 << ADLAR); // Ajuste del resultado 
+  
+  ADCSRA |= (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2); // Establece del ADC Prescaler de 128 
+  ADCSRA |= (1 << ADEN); // Habilitar/ON ADC
+}
+
+uint16_t ADC_read(uint8_t canal) {
+  canal &= 0b00001111; // Máscara para asegurarse de que el valor del canal sea válido
+  ADMUX = (ADMUX & 0xF0) | canal; // Configura el canal del ADC
+  
+  ADCSRA |= (1 << ADSC); // Inicia la conversión
+  
+  while (ADCSRA & (1 << ADSC)) {
+    // Esperar a que la conversión termine
+  }
+  
+  return ADC; // Retorna el valor del ADC
+}
+
+void loop() {
+  ADC_init(); // Inicializar el ADC
+  ADCvalue = ADC_read(5); // LLama funcion ADC_read, Lee el valor del ADC del canal 5 (PC5)
+  
+  if (ADCvalue >= 0 && ADCvalue <= 256) {
+    PORTB = 0b00000001; // Encender el LED correspondiente al rango 0-256
+  } else if (ADCvalue > 256 && ADCvalue <= 512) {
+    PORTB = 0b00000010; // Encender el LED correspondiente al rango 256-512
+    
+  } else if (ADCvalue > 512 && ADCvalue <= 768) {
+    
+    PORTB = 0b00000100; // Encender el LED correspondiente al rango 512-768
+  } else {
+    
+    PORTB = 0b00001000; // Encender el LED correspondiente al rango fuera de los anteriores
+  }
+  
+  _delay_ms(100); // Pausa de 100 milisegundos antes de que se repita el bucle
+}
